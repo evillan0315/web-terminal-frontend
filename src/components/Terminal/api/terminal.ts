@@ -1,7 +1,3 @@
-// This file is not directly used by the Terminal.tsx component as it primarily uses WebSockets.
-// It's included as a placeholder based on the original project structure, but its functions
-// are for REST API calls which the current frontend setup does not make for terminal interactions.
-
 import { API_BASE_URL, ApiError, handleResponse, fetchWithAuth } from '@/api/fetch';
 import { TerminalCommandResponse, ProjectScriptsResponse } from '../types/terminal';
 import { addLog } from '@/stores/logStore';
@@ -16,7 +12,7 @@ export const runTerminalCommand = async (
   command: string,
   cwd: string,
 ): Promise<TerminalCommandResponse> => {
-  addLog('Terminal API', `Executing command: `${command}` in `${cwd}``, 'info');
+  addLog('Terminal API', `Executing command: "${command}" in "${cwd}"`, 'info');
   try {
     const response = await fetchWithAuth(`${API_BASE_URL}/terminal/run`, {
       method: 'POST',
@@ -33,14 +29,14 @@ export const runTerminalCommand = async (
         : '(no stderr)';
     addLog(
       'Terminal API',
-      `Command executed successfully: `${command}``,
+      `Command executed successfully: "${command}" `,
       'success',
       `Stdout: ${formattedStdout}\nStderr: ${formattedStderr}\nExit Code: ${result.exitCode}`,
       result,
     );
     return result;
   } catch (error) {
-    const errorMessage = `Failed to execute command: `${command}`\nError: ${
+    const errorMessage = `Failed to execute command: "${command}"\nError: ${
       error instanceof Error ? error.message : String(error)
     }`;
     addLog('Terminal API', errorMessage, 'error');
@@ -58,7 +54,7 @@ export const fetchProjectScripts = async (
 ): Promise<ProjectScriptsResponse> => {
   addLog(
     'Terminal API',
-    `Fetching package scripts for project root: `${projectRoot}``,
+    `Fetching package scripts for project root: "${projectRoot}"`,
     'info',
   );
   try {
@@ -72,13 +68,13 @@ export const fetchProjectScripts = async (
     const result = await handleResponse<ProjectScriptsResponse>(response);
     addLog(
       'Terminal API',
-      `Successfully fetched package scripts for `${projectRoot}``,
+      `Successfully fetched package scripts for "${projectRoot}"`,
       'success',
       `Manager: ${result.packageManager}, Scripts found: ${result.scripts.length}`,
     );
     return result;
   } catch (error) {
-    const errorMessage = `Failed to fetch package scripts for `${projectRoot}`\nError: ${
+    const errorMessage = `Failed to fetch package scripts for "${projectRoot}"\nError: ${
       error instanceof Error ? error.message : String(error)
     }`;
     addLog('Terminal API', errorMessage, 'error');

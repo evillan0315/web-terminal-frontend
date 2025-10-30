@@ -123,46 +123,35 @@ export const Terminal: React.FC<TerminalProps> = ({
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
 
-        // The initial 'Project Terminal Ready' message and prompt are now handled by
-        // connectTerminal/appendOutput and the PTY itself, respectively.
-        // The frontend no longer manages a local command buffer or writes a '$ ' prompt.
+        // All character input (typing and pasting) goes through onData
+        term.onData((data) => {
+          terminalSocketService.sendInput(data);
+        });
 
         // ──────────────────────────────────────────────
-        // Input Handling (forward all key presses directly to PTY)
+        // Input Handling (onKey for specific DOM events/control sequences)
         // The PTY/shell on the backend will handle line editing, history, and interactive prompts.
         // ──────────────────────────────────────────────
-        term.onKey(({ key, domEvent }) => {
+        term.onKey(({ domEvent }) => {
           const { key: pressedKey, ctrlKey } = domEvent;
 
-          // Handle Ctrl+C for copy (if selection) or interrupt (if no selection)
+          // Ctrl+C: Copy if selection, otherwise send interrupt to PTY
           if (ctrlKey && pressedKey.toLowerCase() === 'c') {
             if (term.hasSelection()) {
-              navigator.clipboard.writeText(term.getSelection() ?? '').catch(() => {});
-              term.clearSelection();
+              term.copySelection(); // Use addon's copy function
             } else {
-              // If no selection, send Ctrl+C to terminal (interrupt)
+              // No selection, send Ctrl+C to terminal (interrupt)
               terminalSocketService.sendInput('\x03'); // ASCII for Ctrl+C (ETX)
             }
-            return;
+            return; // Prevent further processing by other handlers
           }
 
-          // Handle Ctrl+V for paste
-          if (ctrlKey && pressedKey.toLowerCase() === 'v') {
-            navigator.clipboard
-              .readText()
-              .then((clipText) => {
-                if (clipText) {
-                  // Xterm.js's term.paste() also sends characters via onData if configured,
-                  // which will then be forwarded to the backend PTY.
-                  term.paste(clipText);
-                }
-              })
-              .catch(() => {});
-            return;
-          }
+          // Ctrl+V: No explicit handling here. ClipboardAddon, in combination with onData,
+          // should handle pasting automatically by emitting the pasted characters via onData.
 
-          // Forward all other key presses directly to the backend PTY.
-          // The PTY/shell will handle line editing, history, and interactive prompts.
+          // The following cases are for specific key presses that need explicit PTY sequences
+          // sent to the backend, if they are not naturally emitted via onData or require
+          // special handling. This pattern is often used when the backend PTY is in raw mode.
           switch (pressedKey) {
             case 'Enter':
               terminalSocketService.sendInput('\r'); // Send Carriage Return to PTY
@@ -193,11 +182,8 @@ export const Terminal: React.FC<TerminalProps> = ({
               break;
 
             default:
-              // Only process single characters that are not control characters
-              // (most control keys are handled by the specific cases above, or Ctrl+ combinations)
-              if (pressedKey.length === 1 && !ctrlKey) {
-                terminalSocketService.sendInput(pressedKey);
-              }
+              // For all other keys (including regular characters), they should be caught by `onData`.
+              // No action needed here, as `onData` will forward character input.
               break;
           }
         });
@@ -211,7 +197,9 @@ export const Terminal: React.FC<TerminalProps> = ({
 
     // Cleanup XTerm.js instance on component unmount
     return () => {
-      term.dispose();
+      if (term) {
+        term.dispose(); // term.dispose() clears all listeners internally
+      }
       xtermRef.current = null;
       fitAddonRef.current = null;
     };
@@ -342,17 +330,16 @@ export const Terminal: React.FC<TerminalProps> = ({
   const term = xtermRef.current;
   if (!container || !term) return;
 
-  const handleContextMenu = async (event: MouseEvent) => {
+  const handleContextMenu = (event: MouseEvent) => {
     event.preventDefault(); // Prevent default browser context menu
     if (term.hasSelection()) {
-      // If text is selected, copy it to clipboard
-      const selectedText = term.getSelection();
-      await navigator.clipboard.writeText(selectedText);
+      // If text is selected, copy it to clipboard using term.copySelection()
+      term.copySelection();
       term.clearSelection(); // Clear selection after copying
     } else {
-      // If no text selected, paste from clipboard
-      const text = await navigator.clipboard.readText();
-      term.paste(text); // Paste directly into XTerm.js
+      // If no text selected, paste from clipboard using term.paste()
+      // term.paste() will read from clipboard and emit data via onData
+      term.paste();
     }
   };
 

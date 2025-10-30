@@ -17,6 +17,26 @@ A React-based frontend application for interacting with the `node-websocket` ter
 -   npm or Yarn
 -   The `node-websocket` backend server running (typically on `http://localhost:3003`)
 
+### Optional: Install GitHub CLI (gh CLI) on Ubuntu
+
+If you need to interact with GitHub repositories from your terminal, you can install the GitHub CLI.
+
+1.  Add GitHub's GPG key:
+    ```bash
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    ```
+
+2.  Add the GitHub CLI repository to your system's sources:
+    ```bash
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    ```
+
+3.  Update your package list and install `gh`:
+    ```bash
+    sudo apt update
+    sudo apt install gh
+    ```
+
 ## Installation
 
 1.  **Install dependencies:**
