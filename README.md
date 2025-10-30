@@ -2,6 +2,8 @@
 
 A React-based frontend application for interacting with the `node-websocket` terminal server.
 
+This project was generated using the Codejector LLM Code Generator
+
 ## Features
 
 -   **Interactive Terminal**: Powered by XTerm.js, providing a full-featured pseudo-terminal experience.
@@ -116,3 +118,9 @@ Adjust `VITE_WS_URL` if your backend is running on a different address or port.
 ├── vite-env.d.ts
 └── vite.config.ts
 ```
+
+## 📧 Contact
+
+Eddie Villanueva - [evillan0315@gmail.com](mailto:evillan0315@gmail.com)  
+[LinkedIn](https://www.linkedin.com/in/eddie-villalon/)  
+[GitHub](https://github.com/evillan0315)  
