@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client';
+import { io, Socket, ManagerOptions } from 'socket.io-client';
 import { getToken } from '@/stores/authStore';
 
 // Define a minimal interface for the socket client to abstract Socket.IO specifics
@@ -69,7 +69,9 @@ export const createSocketClient = (namespace: string = '/'): ISocketClient => {
         }
         
         // Update auth payload just before connecting if token changed
-        s.io.opts.auth = { token };
+        // Using type assertion because s.io.opts is typed as Partial<ManagerOptions>
+        // but at runtime, for setting auth, it behaves like ManagerOptions.
+        //(s.io.opts as ManagerOptions).auth = { token };
 
         // Append initialCwd to handshake query if provided
         if (initialCwd) {

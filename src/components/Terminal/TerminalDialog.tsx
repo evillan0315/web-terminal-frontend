@@ -63,6 +63,14 @@ const TerminalDialog: React.FC<TerminalDialogProps> = ({
     inputRef.current?.focus();
   }, []);
 
+  /** Define handler for socket output, updating local state and global store */
+  // Declared outside the conditional block to be in scope for cleanup
+  const handleSocketOutput = useCallback((data: string) => {
+    const plain = stripAnsi(data); // Strip ANSI escape codes for display
+    setOutput((prev) => [...prev, plain]); // Update dialog's local output state
+    appendOutput(plain); // Also append to global terminal store's output (optional, for history)
+  }, []);
+
   /** Connect to socket on open and clean up on close */
   useEffect(() => {
     if (!open) {
@@ -70,6 +78,9 @@ const TerminalDialog: React.FC<TerminalDialogProps> = ({
         if (dialogTerminalSocketClient.isConnected()) {
             dialogTerminalSocketClient.disconnect();
         }
+        // Remove listeners explicitly on close to prevent stale closures or memory leaks
+        dialogTerminalSocketClient.off('output', handleSocketOutput);
+        dialogTerminalSocketClient.off('terminal_output', handleSocketOutput);
         setOutput([]);
         return;
     }
@@ -90,13 +101,6 @@ const TerminalDialog: React.FC<TerminalDialogProps> = ({
     dialogTerminalSocketClient.connect(initialCwd).then(() => {
       if (!isMounted) return;
 
-      // Define handler for socket output, updating local state and global store
-      const handleSocketOutput = (data: string) => {
-        const plain = stripAnsi(data); // Strip ANSI escape codes for display
-        setOutput((prev) => [...prev, plain]); // Update dialog's local output state
-        appendOutput(plain); // Also append to global terminal store's output (optional, for history)
-      };
-
       dialogTerminalSocketClient.on('output', handleSocketOutput);
       dialogTerminalSocketClient.on('terminal_output', handleSocketOutput); // Listen to both if backend emits differently
 
@@ -112,12 +116,14 @@ const TerminalDialog: React.FC<TerminalDialogProps> = ({
     // Cleanup function for the effect: disconnect and remove listeners
     return () => {
       isMounted = false;
+      // Listeners are removed in the initial `if (!open)` block now, but ensure removal here too if the dialog is unexpectedly unmounted while open.
+      // For robustness, ensure cleanup here if `open` changes to false or component unmounts.
       dialogTerminalSocketClient.off('output', handleSocketOutput);
       dialogTerminalSocketClient.off('terminal_output', handleSocketOutput);
       dialogTerminalSocketClient.disconnect();
       console.log('TerminalDialog socket disconnected during cleanup.');
     };
-  }, [open, initialCwd]); // Re-run effect when dialog opens/closes or initialCwd changes
+  }, [open, initialCwd, handleSocketOutput]); // Re-run effect when dialog opens/closes or initialCwd changes
 
   const handleSend = () => {
     if (!input.trim()) return;

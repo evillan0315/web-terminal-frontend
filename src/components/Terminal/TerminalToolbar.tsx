@@ -70,7 +70,7 @@ export const TerminalToolbar: React.FC<TerminalToolbarProps> = ({
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <Tooltip title="Close Terminal">
           <IconButton onClick={handleCloseTerminal} size="small">
-            <CarbonTerminal fontSize={`1.2em`} />
+            <CarbonTerminal  />
           </IconButton>
         </Tooltip>
         <Typography variant="subtitle1" sx={{ marginRight: '16px' }}>

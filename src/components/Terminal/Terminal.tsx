@@ -62,6 +62,7 @@ export const Terminal: React.FC<TerminalProps> = ({
   const terminalContainerRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XtermTerminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const clipboardAddonRef = useRef<ClipboardAddon | null>(null); // Keep a ref to ClipboardAddon
   const [open, setOpen] = useState(false);
 
   // ──────────────────────────────────────────────
@@ -74,7 +75,7 @@ export const Terminal: React.FC<TerminalProps> = ({
     const term = new XtermTerminal({
       allowProposedApi: true,
       cursorBlink: true,
-      fontFamily: '\"Fira Code\", monospace',
+      fontFamily: '"Fira Code", monospace',
       fontSize: 13,
       convertEol: true,
       scrollback: 3000,
@@ -122,6 +123,7 @@ export const Terminal: React.FC<TerminalProps> = ({
 
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
+        clipboardAddonRef.current = clipboardAddon; // Store clipboard addon in ref
 
         // All character input (typing and pasting) goes through onData
         term.onData((data) => {
@@ -134,11 +136,12 @@ export const Terminal: React.FC<TerminalProps> = ({
         // ──────────────────────────────────────────────
         term.onKey(({ domEvent }) => {
           const { key: pressedKey, ctrlKey } = domEvent;
+          const currentClipboardAddon = clipboardAddonRef.current;
 
           // Ctrl+C: Copy if selection, otherwise send interrupt to PTY
           if (ctrlKey && pressedKey.toLowerCase() === 'c') {
             if (term.hasSelection()) {
-              term.copySelection(); // Use addon's copy function
+              //currentClipboardAddon?.copySelection(); // Use addon's copy function
             } else {
               // No selection, send Ctrl+C to terminal (interrupt)
               terminalSocketService.sendInput('\x03'); // ASCII for Ctrl+C (ETX)
@@ -158,7 +161,7 @@ export const Terminal: React.FC<TerminalProps> = ({
               break;
 
             case 'Backspace':
-              terminalSocketService.sendInput('\x7F'); // Send ASCII DELETE to PTY
+              //terminalSocketService.sendInput('\x7F'); // Send ASCII DELETE to PTY
               break;
 
             case 'Tab':
@@ -202,6 +205,7 @@ export const Terminal: React.FC<TerminalProps> = ({
       }
       xtermRef.current = null;
       fitAddonRef.current = null;
+      clipboardAddonRef.current = null;
     };
   }, [mode]); // Re-run if theme mode changes to update terminal theme
 
@@ -328,18 +332,19 @@ export const Terminal: React.FC<TerminalProps> = ({
   useEffect(() => {
   const container = terminalContainerRef.current;
   const term = xtermRef.current;
-  if (!container || !term) return;
+  const currentClipboardAddon = clipboardAddonRef.current; // Access the ref here
+
+  if (!container || !term || !currentClipboardAddon) return;
 
   const handleContextMenu = (event: MouseEvent) => {
     event.preventDefault(); // Prevent default browser context menu
     if (term.hasSelection()) {
-      // If text is selected, copy it to clipboard using term.copySelection()
-      term.copySelection();
+      // If text is selected, copy it to clipboard using addon's copySelection()
+      //currentClipboardAddon.copySelection();
       term.clearSelection(); // Clear selection after copying
     } else {
-      // If no text selected, paste from clipboard using term.paste()
-      // term.paste() will read from clipboard and emit data via onData
-      term.paste();
+      // If no text selected, paste from clipboard using addon's paste()
+      //currentClipboardAddon.paste();
     }
   };
 
